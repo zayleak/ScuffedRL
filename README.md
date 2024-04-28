@@ -1,3 +1,3 @@
 # ScuffedRL
 
-tried to implement RL algorithms from scratch + numpy
+tried to implement RL algorithms from scratch with numpy + pytorch
