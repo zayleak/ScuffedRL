@@ -6,26 +6,16 @@ from torch.distributions import Categorical
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
-class Net(nn.Module):
-    def __init__(self, numActions, FCSize, numObs):
-        super(Net, self).__init__()
-        self.fc1 = nn.Linear(numObs, FCSize)
-        self.softmax = nn.Linear(FCSize, numActions)
-
-    def forward(self, input):
-        fc1 = F.relu(self.fc1(input))
-        output = F.softmax(self.softmax(fc1), dim=1)
-        return output
+from sampleModels import ProbRegNet
 
 class REINFORCE():
 
-    def __init__(self, env, FDLayerSize = 7, epsilon=0.9, gamma=0.9, alpha=0.001, decayRate=0.005):
+    def __init__(self, env, FDLayerSize=7, epsilon=0.9, gamma=0.9, alpha=0.001, decayRate=0.005):
         self.env = env
         self.epsilon = epsilon
         self.gamma = gamma
         self.decayRate = decayRate
-        self.net = Net(env.action_space.n, FDLayerSize, env.observation_space.shape[0])
+        self.net = ProbRegNet(env.action_space.n, FDLayerSize, env.observation_space.shape[0])
         self.optimizer = optim.Adam(self.net.parameters(), alpha)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -53,21 +43,20 @@ class REINFORCE():
                 discReturnT = (returns[0] if len(returns)>0 else 0)
                 returns.appendleft(self.gamma*discReturnT + rewards[t])
             
-            # eps = np.finfo(np.float64).eps.item()
             returns = torch.tensor(returns)
-            # returns = (returns - returns.mean()) / (returns.std() + eps)
             
             policyLoss = []
             for logProb, discReturn in zip(logProbs, returns):
                 policyLoss.append(-logProb * discReturn)
             policyLoss = torch.cat(policyLoss).sum()
             
-            # Line 8: PyTorch prefers gradient descent 
             self.optimizer.zero_grad()
             policyLoss.backward()
             self.optimizer.step()
-
+            meanReward = np.mean(episodeRewards)
+            stdDev = np.std(episodeRewards)
             episodeRewards.append(totalRewards)
+            print("Episode {}: Mean Reward: {:.2f}, Standard Deviation: {:.2f}".format(episodeNum, meanReward, stdDev))
 
         return np.mean(episodeRewards), np.std(episodeRewards)
 

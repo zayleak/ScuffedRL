@@ -6,20 +6,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from REINFORCE import REINFORCE
+from DQN import DQN
+from utils import standardPreprocess
 
-
-env = gym.make("CartPole", render_mode="human")
-algo = REINFORCE(env, epsilon=0.9, FDLayerSize=64, gamma=0.99)
-mean, std_dev = algo.train(numEpisodes=200)
-print(f"Mean Reward: {mean:.2f}, Standard Deviation: {std_dev:.2f}")
-
-
-# observation, info = env.reset(seed=42)
-# for _ in range(1000):
-#    action = env.action_space.sample()  # this is where you would insert your policy
-#    observation, reward, terminated, truncated, info = env.step(action)
-#    print(observation)
-#    if terminated or truncated:
-#       observation, info = env.reset()
-
+# env = gym.make("Amidar-v0", render_mode="human", obs_type= "grayscale")
+env = gym.make("LunarLander-v2", render_mode="human")
+algo = DQN(env, batchSize=24, gamma=0.99)
+algo.train(3000)
 env.close()
